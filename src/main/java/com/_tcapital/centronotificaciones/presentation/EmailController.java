@@ -1,8 +1,10 @@
 package com._tcapital.centronotificaciones.presentation;
 
+import com._tcapital.centronotificaciones.Infrastructure.exception.EmailSendException;
 import com._tcapital.centronotificaciones.application.Dto.EmailDto;
+import com._tcapital.centronotificaciones.application.Dto.EmailResponseDto;
+import com._tcapital.centronotificaciones.application.Dto.RequestEmailDto;
 import com._tcapital.centronotificaciones.application.EmailService;
-import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +20,8 @@ public class EmailController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<Void> sendEmail(@RequestBody EmailDto emailRequest) {
-        emailService.sendEmail(emailRequest);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<EmailResponseDto> sendEmail(@RequestBody RequestEmailDto emailRequest) throws EmailSendException{
+        return ResponseEntity.ok(emailService.sendEmail(emailRequest));
     }
 
     @GetMapping("/all")

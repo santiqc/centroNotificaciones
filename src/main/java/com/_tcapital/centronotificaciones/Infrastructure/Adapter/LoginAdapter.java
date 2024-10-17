@@ -60,6 +60,7 @@ public class LoginAdapter {
 
 
             response.setData(data);
+            response.setDataAdmin(adminToken);
 
             return response;
         } catch (Exception e) {

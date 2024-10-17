@@ -1,20 +1,23 @@
 package com._tcapital.centronotificaciones.application;
 
 import com._tcapital.centronotificaciones.Infrastructure.Adapter.EmailPersistenceAdapter;
-import com._tcapital.centronotificaciones.Infrastructure.Adapter.LoginAdapter;
 import com._tcapital.centronotificaciones.Infrastructure.Adapter.SendGridAdapter;
 import com._tcapital.centronotificaciones.application.Dto.EmailDto;
+import com._tcapital.centronotificaciones.application.Dto.EmailResponseDto;
+import com._tcapital.centronotificaciones.application.Dto.LoginCamerResponse;
+import com._tcapital.centronotificaciones.application.Dto.RequestEmailDto;
 import com._tcapital.centronotificaciones.application.mapper.EmailMapper;
 import com._tcapital.centronotificaciones.domain.Addressee;
 import com._tcapital.centronotificaciones.domain.Email;
 import com._tcapital.centronotificaciones.domain.Files;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,29 +27,41 @@ public class EmailServiceImpl implements EmailService {
 
     private final EmailPersistenceAdapter emailPersistenceAdapter;
     private final SendGridAdapter sendGridAdapter;
-    private final LoginAdapter loginAdapter;
+    private final LoginService loginService;
 
-    public EmailServiceImpl(EmailPersistenceAdapter emailPersistenceAdapter, SendGridAdapter sendGridAdapter, LoginAdapter loginAdapter) {
+    ZonedDateTime zonedDateTime = ZonedDateTime.now(ZoneId.of("America/Bogota"));
+
+    public EmailServiceImpl(EmailPersistenceAdapter emailPersistenceAdapter, SendGridAdapter sendGridAdapter, LoginService loginService) {
         this.emailPersistenceAdapter = emailPersistenceAdapter;
         this.sendGridAdapter = sendGridAdapter;
-        this.loginAdapter = loginAdapter;
+        this.loginService = loginService;
     }
 
     @Override
-    public void sendEmail(EmailDto emailRequest) {
-        // sendGridAdapter.sendEmail(recipient, subject, body);
+    public EmailResponseDto sendEmail(RequestEmailDto emailRequest) {
+        LoginCamerResponse login = loginService.login();
+        String token = login.getData().getAttributes().getAccessToken();
 
-        Email email = EmailMapper.toEntity(emailRequest);
-        emailPersistenceAdapter.saveEmail(email);
+        EmailResponseDto resp = sendGridAdapter.sendEmail(token, emailRequest);
+//        Email email = EmailMapper.toEntity(emailRequest);
+        emailPersistenceAdapter.saveEmail(Email.builder()
+                .since(emailRequest.getFrom())
+                .forTo(emailRequest.getTo())
+                .cc(emailRequest.getCc())
+                .bcc(emailRequest.getBcc())
+                .subject(emailRequest.getSubject())
+                .body(emailRequest.getBody())
+                .trackingId(resp.getData().getAttributes().getTrackingID())
+                .isLargeMail(emailRequest.getIsLargeMail())
+                .sentAt(zonedDateTime.toLocalDateTime())
+                .isCertificate(true)
+                .status(null)
+                .build());
+        return resp;
+
+
     }
 
-    //    @Override
-//    public List<EmailDto> getSentEmails(String recipient) {
-//        Page<Email> emails =  emailPersistenceAdapter.findByRecipient(1);
-//        return emails.stream()
-//                .map(EmailMapper::toDTO)
-//                .collect(Collectors.toList());
-//    }
     @Override
     public List<EmailDto> getSentEmails(String status, String cc, String process, Integer pageNo, Integer pageSize) {
         Page<Email> emails = emailPersistenceAdapter.filterEmailsByStatusCcAndProcess(status, cc, process, pageNo, pageSize);

@@ -1,12 +1,14 @@
 package com._tcapital.centronotificaciones.domain;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
 @Entity
+@Builder
 public class Email {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

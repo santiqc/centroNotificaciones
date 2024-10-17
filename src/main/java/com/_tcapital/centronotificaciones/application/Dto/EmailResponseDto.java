@@ -1,8 +1,9 @@
 package com._tcapital.centronotificaciones.application.Dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
-
+@Data
 public class EmailResponseDto {
     private DataBodyDto data;
 
