@@ -16,7 +16,7 @@ public interface JpaEmailRepository extends JpaRepository<Email, Long> {
     Page<Email> filterEmails(Pageable pageable);
 
 
-    @Query("SELECT e FROM Email e JOIN Addressee a ON e.trackingId = a.trackingId " +
+    @Query("SELECT e FROM Email e LEFT JOIN Addressee a ON e.trackingId = a.trackingId " +
             "WHERE (:status IS NULL OR e.status = :status) " +
             "AND (:cc IS NULL OR e.cc = :cc) " +
             "AND (:process IS NULL OR a.process = :process)")
@@ -24,4 +24,5 @@ public interface JpaEmailRepository extends JpaRepository<Email, Long> {
                                                  @Param("cc") String cc,
                                                  @Param("process") String process,
                                                  Pageable pageable);
+
 }
