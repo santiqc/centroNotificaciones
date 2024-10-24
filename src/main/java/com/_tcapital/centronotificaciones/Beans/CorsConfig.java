@@ -11,12 +11,12 @@ public class CorsConfig implements WebMvcConfigurer {
     @Value("${api.base.url}")
     private String apiBaseUrl;
 
+    @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins(apiBaseUrl)
+                .allowedOrigins("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true);
+                .allowedHeaders("*");
     }
 
 }
