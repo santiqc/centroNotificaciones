@@ -10,5 +10,7 @@ public class ArchivoDto {
     private String name;
     private String path;
     private boolean isWitness;
+    private boolean attach;
+    private String base64;
 }
 

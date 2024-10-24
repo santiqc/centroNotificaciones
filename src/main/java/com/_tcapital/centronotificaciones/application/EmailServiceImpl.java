@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,7 +66,9 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public List<EmailDto> getSentEmails(String status, String cc, String process, Integer pageNo, Integer pageSize) {
         Page<Email> emails = emailPersistenceAdapter.filterEmailsByStatusCcAndProcess(status, cc, process, pageNo, pageSize);
-
+        if (emails.isEmpty()) {
+            return Collections.emptyList();
+        }
         return emails.stream()
                 .map(email -> {
                     List<Addressee> addressee = emailPersistenceAdapter.findAddresseeByIdEmail(email.getId());

@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -151,8 +152,12 @@ public class ProcesamientoServiceImpl implements ProcesamientoService {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(carpetaHistory, "*.pdf")) {
                 for (Path path : stream) {
                     String nombreArchivo = path.getFileName().toString();
+
+                    byte[] fileBytes = Files.readAllBytes(path);
+                    String fileBase64 = Base64.getEncoder().encodeToString(fileBytes);
+
                     boolean isWitness = nombreArchivo.equals(idHistory.toString() + ".pdf");
-                    archivos.add(new ArchivoDto(nombreArchivo, path.toString(), isWitness));
+                    archivos.add(new ArchivoDto(nombreArchivo, path.toString(), isWitness, Boolean.TRUE,fileBase64));
                 }
 
             } catch (IOException e) {
