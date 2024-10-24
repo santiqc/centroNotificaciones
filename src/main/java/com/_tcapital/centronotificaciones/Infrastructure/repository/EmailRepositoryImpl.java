@@ -29,4 +29,14 @@ public class EmailRepositoryImpl implements EmailRepository {
         return jpaEmailRepository.filterEmails(pageable);
     }
 
+    @Override
+    public void saveAll(List<Email> emails) {
+        if (emails != null && !emails.isEmpty()) {
+            jpaEmailRepository.saveAll(emails);
+        } else {
+            System.out.println("La lista de correos está vacía o es nula.");
+        }
+    }
+
+
 }

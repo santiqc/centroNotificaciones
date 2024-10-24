@@ -22,10 +22,17 @@ public class Email {
     private String cc;
     private String bcc;
     private String subject;
+
+    @Lob
     private String body;
+
+    private String event;
+    private String reason;
+    private Long idHistory;
     private String trackingId;
     private Boolean isLargeMail;
     private LocalDateTime sentAt;
+    private LocalDateTime eventdate;
     private Boolean isCertificate;
     private String status;
 
