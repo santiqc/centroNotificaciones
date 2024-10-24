@@ -42,6 +42,10 @@ public class EmailPersistenceAdapter {
         return addresseeRepository.findByTrackingId(trackingId);
     }
 
+    public List<Addressee> findAddresseeByIdEmail(Long emailId) {
+        return addresseeRepository.findByEmail(emailId);
+    }
+
     public List<Files> findFilesByTrackingId(String trackingId) {
         return filesRepository.findByTrackingId(trackingId);
     }

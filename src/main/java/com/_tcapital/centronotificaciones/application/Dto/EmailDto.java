@@ -5,20 +5,32 @@ import com._tcapital.centronotificaciones.domain.Files;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 public class EmailDto {
     private Long id;
-    private String from;
-    private String to;
+    private String since;
+    private String forTo;
     private String cc;
     private String bcc;
     private String subject;
+
     private String body;
-    private List<Files>files;
+
+    private String event;
+    private String reason;
+    private Long idHistory;
+    private String trackingId;
     private Boolean isLargeMail;
     private LocalDateTime sentAt;
-    private Boolean isCertificated;
-    private Addressee addressee;
+    private LocalDateTime eventdate;
+    private Boolean isCertificate;
+    private String status;
+
+    private List<Files>files;
+    private List<Addressee> addressee;
+
+
 }

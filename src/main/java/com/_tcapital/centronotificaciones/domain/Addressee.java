@@ -1,9 +1,6 @@
 package com._tcapital.centronotificaciones.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
@@ -18,6 +15,11 @@ public class Addressee {
     private String trackingId;
 
     private String process;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "email_id")
+    private Email email;
 
 
 }

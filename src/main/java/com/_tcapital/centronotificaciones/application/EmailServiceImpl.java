@@ -68,7 +68,7 @@ public class EmailServiceImpl implements EmailService {
 
         return emails.stream()
                 .map(email -> {
-                    Addressee addressee = emailPersistenceAdapter.findAddresseeByTrackingId(email.getTrackingId());
+                    List<Addressee> addressee = emailPersistenceAdapter.findAddresseeByIdEmail(email.getId());
                     List<Files> files = emailPersistenceAdapter.findFilesByTrackingId(email.getTrackingId());
 
                     EmailDto emailDto = EmailMapper.toDTO(email);

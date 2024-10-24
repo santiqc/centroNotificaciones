@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,8 +16,8 @@ public interface JpaEmailRepository extends JpaRepository<Email, Long> {
     @Query("SELECT e FROM Email e")
     Page<Email> filterEmails(Pageable pageable);
 
-
-    @Query("SELECT e FROM Email e LEFT JOIN Addressee a ON e.trackingId = a.trackingId " +
+    @Transactional
+    @Query("SELECT e FROM Email e LEFT JOIN Addressee a ON e.id = a.email.id " +
             "WHERE (:status IS NULL OR e.status = :status) " +
             "AND (:cc IS NULL OR e.cc = :cc) " +
             "AND (:process IS NULL OR a.process = :process)")

@@ -1,7 +1,9 @@
 package com._tcapital.centronotificaciones.application;
 
+import com._tcapital.centronotificaciones.Infrastructure.repository.AddresseeRepository;
 import com._tcapital.centronotificaciones.Infrastructure.repository.EmailRepository;
 import com._tcapital.centronotificaciones.application.Dto.ArchivoDto;
+import com._tcapital.centronotificaciones.domain.Addressee;
 import com._tcapital.centronotificaciones.domain.Email;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -24,9 +26,11 @@ import java.util.regex.Pattern;
 @Service
 public class ProcesamientoServiceImpl implements ProcesamientoService {
     private final EmailRepository emailRepository;
+    private final AddresseeRepository addresseeRepository;
 
-    public ProcesamientoServiceImpl(EmailRepository emailRepository) {
+    public ProcesamientoServiceImpl(EmailRepository emailRepository, AddresseeRepository addresseeRepository) {
         this.emailRepository = emailRepository;
+        this.addresseeRepository = addresseeRepository;
     }
 
 
@@ -51,20 +55,30 @@ public class ProcesamientoServiceImpl implements ProcesamientoService {
                     .withDelimiter(';')
                     .withFirstRecordAsHeader()
                     .parse(reader);
-            Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
+            Pattern pattern = Pattern.compile("(.+?)\\s*\\(([^)]+)\\)");
             ArrayList<Email> emails = new ArrayList<>();
+            ArrayList<Addressee> arrayListAddres = new ArrayList<>();
+
             for (CSVRecord record : csvParser) {
 
                 Path archivoCuerpoMensaje = obtenerArchivoPorId(Long.parseLong(record.get("Id")));
-                if(archivoCuerpoMensaje != null){
+                if (archivoCuerpoMensaje != null) {
                     Email email = new Email();
+                    Addressee addressee = new Addressee();
                     String nombresEmail = record.get("Nombres - Email");
                     Matcher matcher = pattern.matcher(nombresEmail);
                     String correo = "";
+                    String nombre = "";
+
                     if (matcher.find()) {
-                        correo = matcher.group(1);
+                        nombre = matcher.group(1).trim();
+                        correo = matcher.group(2);
+                        addressee.setProcess("historico sendmail");
+                        addressee.setName(nombre);
                     } else {
-                        correo = "No Correo";
+                        correo = "No Email";
+                        nombre = "No Name";
+
                     }
 
                     // Separar las dos fechas usando el separador '/'
@@ -86,11 +100,16 @@ public class ProcesamientoServiceImpl implements ProcesamientoService {
                     String cuerpoCorreo = leerContenidoArchivo(archivoCuerpoMensaje);
                     email.setBody(cuerpoCorreo);
                     emails.add(email);
-                }else{
+                    addressee.setEmail(email);
+
+                    arrayListAddres.add(addressee);
+                } else {
                     break;
                 }
             }
-             emailRepository.saveAll(emails);
+
+            emailRepository.saveAll(emails);
+            addresseeRepository.saveAll(arrayListAddres);
             System.out.println("Archivo procesado: " + path.getFileName());
         } catch (Exception e) {
             System.err.println("Error al procesar el archivo: " + path.getFileName());
@@ -140,7 +159,7 @@ public class ProcesamientoServiceImpl implements ProcesamientoService {
                 e.printStackTrace(); // Manejo de excepciones
             }
         } else {
-                return new ArrayList<>();
+            return new ArrayList<>();
         }
 
         return archivos;
