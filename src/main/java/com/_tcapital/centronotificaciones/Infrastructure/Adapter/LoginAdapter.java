@@ -1,5 +1,6 @@
 package com._tcapital.centronotificaciones.Infrastructure.Adapter;
 
+import com._tcapital.centronotificaciones.Infrastructure.exception.EmailSendException;
 import com._tcapital.centronotificaciones.application.Dto.CamerFirma.AttributesLoginResponse;
 import com._tcapital.centronotificaciones.application.Dto.CamerFirma.DataLoginResponse;
 import com._tcapital.centronotificaciones.application.Dto.LoginCamerResponse;
@@ -64,7 +65,7 @@ public class LoginAdapter {
 
             return response;
         } catch (Exception e) {
-            throw new RuntimeException("Login failed: " + e.getMessage(), e);
+            throw new EmailSendException("Login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -90,7 +91,7 @@ public class LoginAdapter {
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             return response.getBody();
         } else {
-            throw new RuntimeException("Login failed with status: " + response.getStatusCode());
+            throw new EmailSendException("Login failed with status: " + response.getStatusCode(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

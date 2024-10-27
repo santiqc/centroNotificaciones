@@ -3,10 +3,13 @@ package com._tcapital.centronotificaciones.presentation;
 import com._tcapital.centronotificaciones.Infrastructure.exception.EmailSendException;
 import com._tcapital.centronotificaciones.application.Dto.EmailDto;
 import com._tcapital.centronotificaciones.application.Dto.EmailResponseDto;
+import com._tcapital.centronotificaciones.application.Dto.FileUploadResponse;
 import com._tcapital.centronotificaciones.application.Dto.RequestEmailDto;
 import com._tcapital.centronotificaciones.application.EmailService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,7 +24,7 @@ public class EmailController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<EmailResponseDto> sendEmail(@RequestBody RequestEmailDto emailRequest) throws EmailSendException{
+    public ResponseEntity<EmailResponseDto> sendEmail(@RequestBody RequestEmailDto emailRequest) throws EmailSendException {
         return ResponseEntity.ok(emailService.sendEmail(emailRequest));
     }
 
@@ -42,5 +45,11 @@ public class EmailController {
         return ResponseEntity.ok("email run");
     }
 
+    @PostMapping(value = "/uploadfile", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<FileUploadResponse> uploadFile(
+            @RequestParam("file") MultipartFile file) {
+        FileUploadResponse response = emailService.uploadFile(file);
+        return ResponseEntity.ok(response);
+    }
 
 }

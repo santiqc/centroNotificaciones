@@ -32,5 +32,8 @@ public class EmailDto {
     private List<Files>files;
     private List<Addressee> addressee;
 
+    private Integer attachments;
+    private Boolean witness;
+
 
 }
