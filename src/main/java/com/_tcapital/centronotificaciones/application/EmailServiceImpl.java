@@ -2,9 +2,11 @@ package com._tcapital.centronotificaciones.application;
 
 import com._tcapital.centronotificaciones.Infrastructure.Adapter.EmailPersistenceAdapter;
 import com._tcapital.centronotificaciones.Infrastructure.Adapter.SendGridAdapter;
+import com._tcapital.centronotificaciones.Infrastructure.exception.EmailSendException;
 import com._tcapital.centronotificaciones.application.Dto.*;
 import com._tcapital.centronotificaciones.application.mapper.EmailMapper;
 import com._tcapital.centronotificaciones.domain.Addressee;
+import com._tcapital.centronotificaciones.domain.Application;
 import com._tcapital.centronotificaciones.domain.Email;
 import com._tcapital.centronotificaciones.domain.Files;
 import jakarta.persistence.criteria.*;
@@ -12,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,26 +44,54 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public EmailResponseDto sendEmail(RequestEmailDto emailRequest) {
-        LoginCamerResponse login = loginService.login();
-        String token = login.getData().getAttributes().getAccessToken();
+        log.info("Starting email sending process for application: {}", emailRequest.getNameApplication());
 
-        EmailResponseDto resp = sendGridAdapter.sendEmail(token, emailRequest);
-        emailPersistenceAdapter.saveEmail(Email.builder()
-                .since(emailRequest.getFrom())
-                .forTo(emailRequest.getTo())
-                .cc(emailRequest.getCc())
-                .bcc(emailRequest.getBcc())
-                .subject(emailRequest.getSubject())
-                .body(emailRequest.getBody())
-                .trackingId(resp.getData().getAttributes().getTrackingID())
-                .isLargeMail(emailRequest.getIsLargeMail())
-                .sentAt(zonedDateTime.toLocalDateTime())
-                .isCertificate(true)
-                .status(null)
-                .build());
-        return resp;
+        try {
+            LoginCamerResponse login = loginService.login();
+            String token = login.getData().getAttributes().getAccessToken();
+            log.debug("Token acquired for email sending.");
 
 
+            EmailResponseDto response = sendGridAdapter.sendEmail(token, emailRequest);
+            log.info("Email sent successfully with tracking ID: {}", response.getData().getAttributes().getTrackingID());
+
+
+            Application application = new Application();
+            application.setName(emailRequest.getNameApplication());
+            Application savedApplication = emailPersistenceAdapter.saveApplication(application);
+
+
+            if (savedApplication != null && savedApplication.getId() != null) {
+                log.info("Application saved successfully with ID: {}", savedApplication.getId());
+
+                Email email = Email.builder()
+                        .since(emailRequest.getFrom())
+                        .forTo(emailRequest.getTo())
+                        .cc(emailRequest.getCc())
+                        .bcc(emailRequest.getBcc())
+                        .subject(emailRequest.getSubject())
+                        .body(emailRequest.getBody())
+                        .trackingId(response.getData().getAttributes().getTrackingID())
+                        .isLargeMail(emailRequest.getIsLargeMail())
+                        .sentAt(ZonedDateTime.now().toLocalDateTime())
+                        .eventdate(ZonedDateTime.now().toLocalDateTime())
+                        .isCertificate(true)
+                        .status(null)
+                        .application(savedApplication)
+                        .build();
+
+                emailPersistenceAdapter.saveEmail(email);
+                log.info("Email record saved successfully in the database.");
+            } else {
+                log.warn("Application was not saved; skipping email record saving.");
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("An error occurred during email sending process for application: {}", emailRequest.getNameApplication(), e);
+            throw new EmailSendException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Override

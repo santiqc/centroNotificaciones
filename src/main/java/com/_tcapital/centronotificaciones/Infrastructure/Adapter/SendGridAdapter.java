@@ -81,11 +81,24 @@ public class SendGridAdapter {
             RPostResponse apiResponse = response.getBody();
             return convertToEmailResponseDto(apiResponse);
 
+        } catch (EmailSendException e) {
+            log.error("Error sending email through RPost (EmailSendException): {}", e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             log.error("Error sending email through RPost", e);
             throw new EmailSendException("Error sending email through RPost " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+    }
+
+    private String processEmailList(String emails) {
+        if (emails == null || emails.trim().isEmpty()) {
+            return "";
+        }
+        return Arrays.stream(emails.split(";"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(";"));
     }
 
     public String uploadFile(MultipartFile file, String token) {
@@ -160,13 +173,5 @@ public class SendGridAdapter {
         return responseDto;
     }
 
-    private String processEmailList(String emails) {
-        if (emails == null || emails.trim().isEmpty()) {
-            return "";
-        }
-        return Arrays.stream(emails.split(";"))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining(";"));
-    }
+
 }

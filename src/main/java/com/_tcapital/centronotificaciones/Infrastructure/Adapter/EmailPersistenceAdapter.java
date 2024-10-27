@@ -2,9 +2,11 @@ package com._tcapital.centronotificaciones.Infrastructure.Adapter;
 
 
 import com._tcapital.centronotificaciones.Infrastructure.repository.AddresseeRepository;
+import com._tcapital.centronotificaciones.Infrastructure.repository.ApplicationRepository;
 import com._tcapital.centronotificaciones.Infrastructure.repository.FilesRepository;
 import com._tcapital.centronotificaciones.Infrastructure.repository.JpaEmailRepository;
 import com._tcapital.centronotificaciones.domain.Addressee;
+import com._tcapital.centronotificaciones.domain.Application;
 import com._tcapital.centronotificaciones.domain.Email;
 import com._tcapital.centronotificaciones.domain.Files;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +23,14 @@ public class EmailPersistenceAdapter {
     private final JpaEmailRepository emailRepository;
     private final AddresseeRepository addresseeRepository;
     private final FilesRepository filesRepository;
+    private final ApplicationRepository applicationRepository;
 
     @Autowired
-    public EmailPersistenceAdapter(JpaEmailRepository emailRepository, AddresseeRepository addresseeRepository, FilesRepository filesRepository) {
+    public EmailPersistenceAdapter(JpaEmailRepository emailRepository, AddresseeRepository addresseeRepository, FilesRepository filesRepository, ApplicationRepository applicationRepository) {
         this.emailRepository = emailRepository;
         this.addresseeRepository = addresseeRepository;
         this.filesRepository = filesRepository;
+        this.applicationRepository = applicationRepository;
     }
 
     public void saveEmail(Email email) {
@@ -55,5 +59,8 @@ public class EmailPersistenceAdapter {
         return emailRepository.filterEmailsByStatusCcAndProcess(status, cc, process, pageable);
     }
 
+    public Application saveApplication(Application application) {
+        return applicationRepository.save(application);
+    }
 
 }
