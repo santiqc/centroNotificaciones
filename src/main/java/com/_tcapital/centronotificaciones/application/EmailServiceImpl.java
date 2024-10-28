@@ -124,8 +124,11 @@ public class EmailServiceImpl implements EmailService {
                                 .collect(Collectors.toList());
                         emailDto.setFiles(fileDetailsList);
                     }
-                    emailDto.setWitness(Boolean.TRUE);
-                    emailDto.setAttachments(0);
+
+                    Long attachmentCount = files.stream()
+                            .filter(file -> Boolean.FALSE.equals(file.getWitness()))
+                            .count();
+                    emailDto.setAttachments(attachmentCount);
 
                     return emailDto;
                 })
@@ -343,5 +346,22 @@ public class EmailServiceImpl implements EmailService {
         return Map.of(
                 "data", response
         );
+    }
+
+    @Override
+    public MessageStatusResponse getMessageStatus(String trackingId) throws EmailSendException {
+        log.info("Initiating getMessageStatus: {}", trackingId);
+        LoginCamerResponse login = loginService.login();
+        String token = login.getData().getAttributes().getAccessToken();
+        String tokenAdmin = login.getDataAdmin().getAccessToken();
+        return sendGridAdapter.getMessageStatus(trackingId, token, tokenAdmin);
+    }
+
+    @Override
+    public ReceiptResponse getReceiptByTrackId(String trackingId) throws EmailSendException {
+        log.info("Initiating getReceiptByTrackId: {}", trackingId);
+        LoginCamerResponse login = loginService.login();
+        String token = login.getData().getAttributes().getAccessToken();
+        return sendGridAdapter.getReceiptByTrackId(trackingId, token);
     }
 }

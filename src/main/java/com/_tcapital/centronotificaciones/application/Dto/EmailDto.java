@@ -32,8 +32,8 @@ public class EmailDto {
     private Object files;
     private List<Addressee> addressee;
 
-    private Integer attachments;
-    private Boolean witness;
+    private Long attachments;
+//    private Boolean witness;
     private String nameApplication;
 
 }

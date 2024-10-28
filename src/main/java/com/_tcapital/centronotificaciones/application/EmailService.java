@@ -21,4 +21,9 @@ public interface EmailService {
     EmailResponseDto sendEmail(RequestEmailCompletDto emailRequest) throws EmailSendException;
 
     Object generateUsageReport(UsageReportRequest request) throws EmailSendException;
+
+    MessageStatusResponse getMessageStatus(String trackingId) throws EmailSendException;
+
+    ReceiptResponse getReceiptByTrackId(String trackingId) throws EmailSendException;
+
 }

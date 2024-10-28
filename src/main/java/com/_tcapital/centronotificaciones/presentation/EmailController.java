@@ -5,11 +5,14 @@ import com._tcapital.centronotificaciones.application.Dto.*;
 import com._tcapital.centronotificaciones.application.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -85,6 +88,33 @@ public class EmailController {
             @RequestBody UsageReportRequest request) {
         Object response = emailService.generateUsageReport(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/messagestatus")
+    public ResponseEntity<MessageStatusResponse> getMessageStatus(
+            @RequestParam(required = false) String trackingId) {
+        MessageStatusResponse response = emailService.getMessageStatus(trackingId);
+        return ResponseEntity.ok(response);
+    }
+
+
+    @GetMapping("/receipt")
+    public ResponseEntity<?> getReceiptByTrackId(
+            @RequestParam(required = false) String trackingId,
+            @RequestParam(defaultValue = "false") boolean download) {
+        ReceiptResponse receiptResponse = emailService.getReceiptByTrackId(trackingId);
+
+        if (download) {
+            byte[] zipContent = receiptResponse.getContent().getBytes(StandardCharsets.ISO_8859_1);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", trackingId + ".zip");
+            headers.setContentLength(zipContent.length);
+            return new ResponseEntity<>(zipContent, headers, HttpStatus.OK);
+        } else {
+            return ResponseEntity.ok(receiptResponse);
+        }
+
     }
 
 }
