@@ -13,13 +13,11 @@ import jakarta.persistence.criteria.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -249,29 +247,75 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    public EmailResponseDto sendEmail(RequestEmailCompletDto emailRequest) throws EmailSendException {
+        log.info("Starting email sending process for application: {}", emailRequest.getNameApplication());
 
-    public static Specification<Email> filterByStatusAndCcAndProcess(String status, String cc, String process) {
-        return (Root<Email> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        try {
+            LoginCamerResponse login = loginService.login();
+            String token = login.getData().getAttributes().getAccessToken();
+            log.debug("Token acquired for email sending.");
 
 
-            if (status != null) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+            RequestEmailDto requestEmailDto = new RequestEmailDto();
+            requestEmailDto.setFrom(emailRequest.getFrom());
+            requestEmailDto.setTo(emailRequest.getTo());
+            requestEmailDto.setBcc(emailRequest.getBcc());
+            requestEmailDto.setSubject(emailRequest.getSubject());
+            requestEmailDto.setBody(emailRequest.getBody());
+            requestEmailDto.setAttachments(emailRequest.getAttachments());
+            requestEmailDto.setIsLargeMail(emailRequest.getIsLargeMail());
+
+            EmailResponseDto response = sendGridAdapter.sendEmail(token, requestEmailDto);
+            log.info("Email sent successfully with tracking ID: {}", response.getData().getAttributes().getTrackingID());
+
+
+            Application application = new Application();
+            application.setName(emailRequest.getNameApplication());
+            Application savedApplication = emailPersistenceAdapter.saveApplication(application);
+
+            String trackingID = response.getData().getAttributes().getTrackingID();
+
+            if (savedApplication != null && savedApplication.getId() != null) {
+                log.info("Application saved successfully with ID: {}", savedApplication.getId());
+
+                Email email = Email.builder()
+                        .since(emailRequest.getFrom())
+                        .forTo(emailRequest.getTo())
+                        .cc(emailRequest.getCc())
+                        .bcc(emailRequest.getBcc())
+                        .subject(emailRequest.getSubject())
+                        .body(emailRequest.getBody())
+                        .trackingId(trackingID)
+                        .isLargeMail(emailRequest.getIsLargeMail())
+                        .sentAt(zonedDateTime.toLocalDateTime())
+                        .eventdate(zonedDateTime.toLocalDateTime())
+                        .isCertificate(true)
+                        .status(null)
+                        .application(savedApplication)
+                        .event(emailRequest.getEvent())
+                        .reason(emailRequest.getReason())
+                        .build();
+
+                Email emailSaved = emailPersistenceAdapter.saveEmail(email);
+                RequestAddresseeDto dataAddressee = new RequestAddresseeDto();
+                dataAddressee.setName(emailRequest.getNameAddressee());
+                dataAddressee.setProcess(emailRequest.getProcessAddressee());
+                dataAddressee.setFile(emailRequest.getFiles());
+
+                //update AddresseeAndFiles
+                updateInfoAddresseeAndFiles(emailSaved.getTrackingId(), dataAddressee);
+
+                log.info("Email record saved successfully in the database.");
+            } else {
+                log.warn("Application was not saved; skipping email record saving.");
             }
 
+            return response;
 
-            if (cc != null) {
-                predicates.add(criteriaBuilder.equal(root.get("cc"), cc));
-            }
-
-
-            if (process != null) {
-                Join<Email, Addressee> addresseeJoin = root.join("addressee");
-                predicates.add(criteriaBuilder.equal(addresseeJoin.get("process"), process));
-            }
-
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
+        } catch (Exception e) {
+            log.error("An error occurred during email sending process for application: {}", emailRequest.getNameApplication(), e);
+            throw new EmailSendException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

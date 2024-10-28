@@ -36,8 +36,8 @@ public class EmailPersistenceAdapter {
         this.applicationRepository = applicationRepository;
     }
 
-    public void saveEmail(Email email) {
-        emailRepository.save(email);
+    public Email saveEmail(Email email) {
+        return  emailRepository.save(email);
     }
 
     public Optional<Email> findEmailByTrackingId(String trackingId) {

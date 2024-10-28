@@ -16,4 +16,6 @@ public interface EmailService {
     Object  updateInfoAddresseeAndFiles(String trackingId, RequestAddresseeDto emailRequest) throws EmailSendException;
 
     Object findByIdHistoryOrTrackingId(Long idHistory, String trackingId) throws EmailSendException;
+
+    EmailResponseDto sendEmail(RequestEmailCompletDto emailRequest) throws EmailSendException;
 }

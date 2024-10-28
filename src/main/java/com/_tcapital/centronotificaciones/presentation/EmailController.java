@@ -29,6 +29,11 @@ public class EmailController {
         return ResponseEntity.ok(emailService.sendEmail(emailRequest));
     }
 
+    @PostMapping(value = "/sendEmailData", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<EmailResponseDto> sendEmail( @ModelAttribute RequestEmailCompletDto emailRequest) throws EmailSendException {
+        return ResponseEntity.ok(emailService.sendEmail(emailRequest));
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<EmailDto>> getSentEmails(
             @RequestParam(required = false) String status,
