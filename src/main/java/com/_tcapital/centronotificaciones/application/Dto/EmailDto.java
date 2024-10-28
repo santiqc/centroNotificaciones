@@ -29,11 +29,11 @@ public class EmailDto {
     private Boolean isCertificate;
     private String status;
 
-    private List<Files>files;
+    private Object files;
     private List<Addressee> addressee;
 
     private Integer attachments;
     private Boolean witness;
-
+    private String nameApplication;
 
 }

@@ -27,6 +27,9 @@ public class EmailMapper {
         emailDto.setEventdate(email.getEventdate());
         emailDto.setIsCertificate(email.getIsCertificate());
         emailDto.setStatus(email.getStatus());
+        if (email.getApplication() != null) {
+            emailDto.setNameApplication(email.getApplication().getName());
+        }
         return emailDto;
     }
 

@@ -109,7 +109,20 @@ public class EmailServiceImpl implements EmailService {
                     }
 
                     if (files != null && !files.isEmpty()) {
-                        emailDto.setFiles(files);
+//                        emailDto.setFiles(files);
+                        List<Map<String, Object>> fileDetailsList = files.stream()
+                                .map(file -> {
+                                    Map<String, Object> fileMap = new HashMap<>();
+                                    fileMap.put("base64", Base64.getEncoder().encodeToString(file.getFileData()));
+                                    fileMap.put("nameFile", file.getNameFile());
+                                    fileMap.put("contentType", file.getContentType());
+                                    fileMap.put("fileSize", file.getFileSize());
+                                    fileMap.put("uploadDate", file.getUploadDate());
+                                    fileMap.put("witness", file.getWitness());
+                                    return fileMap;
+                                })
+                                .collect(Collectors.toList());
+                        emailDto.setFiles(fileDetailsList);
                     }
                     emailDto.setWitness(Boolean.TRUE);
                     emailDto.setAttachments(0);
