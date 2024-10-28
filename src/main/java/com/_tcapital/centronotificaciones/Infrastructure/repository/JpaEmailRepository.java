@@ -10,9 +10,11 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JpaEmailRepository extends JpaRepository<Email, Long> {
+    @Transactional
     @Query("SELECT e FROM Email e")
     Page<Email> filterEmails(Pageable pageable);
 
@@ -25,5 +27,14 @@ public interface JpaEmailRepository extends JpaRepository<Email, Long> {
                                                  @Param("cc") String cc,
                                                  @Param("process") String process,
                                                  Pageable pageable);
+
+    @Transactional
+    @Query("SELECT e FROM Email e WHERE e.trackingId = :trackingId")
+    Optional<Email> findByTrackingId(@Param("trackingId") String trackingId);
+
+    @Transactional
+    @Query("SELECT e FROM Email e WHERE e.idHistory = :idHistory OR e.trackingId = :trackingId")
+    Optional<Email> findByIdHistoryOrTrackingId(@Param("idHistory") Long idHistory,
+                                                @Param("trackingId") String trackingId);
 
 }

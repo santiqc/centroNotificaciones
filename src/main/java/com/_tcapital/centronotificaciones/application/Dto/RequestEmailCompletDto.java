@@ -1,11 +1,11 @@
 package com._tcapital.centronotificaciones.application.Dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RequestEmailDto {
+public class RequestEmailCompletDto {
 
     @Schema(description = "Sender's email address", example = "user@example.com")
     private String from;
@@ -39,6 +39,22 @@ public class RequestEmailDto {
     @Schema(description = "Flag indicating if the email is large", example = "false")
     private Boolean isLargeMail;
 
+
+    private String event;
+    private String reason;
+
+
+    //Application
     @Schema(description = "Name of the application", example = "")
     private String nameApplication;
+
+    //Addressee
+
+    private String nameAddressee;
+    private String processAddressee;
+
+    //Files
+    private List<MultipartFile> files;
+
+
 }

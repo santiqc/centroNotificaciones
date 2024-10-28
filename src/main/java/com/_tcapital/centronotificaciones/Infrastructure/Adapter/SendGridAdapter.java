@@ -4,13 +4,15 @@ import com._tcapital.centronotificaciones.Infrastructure.exception.EmailSendExce
 import com._tcapital.centronotificaciones.application.Dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +26,9 @@ public class SendGridAdapter {
     @Value("${sendgrid.api.key}")
     private String rpostApiUrl;
 
+    @Value("${camer.api}")
+    private String apiDomain;
+
     private final RestTemplate restTemplate;
 
     public SendGridAdapter(RestTemplate restTemplate) {
@@ -34,7 +39,7 @@ public class SendGridAdapter {
         try {
 
             if (token == null || token.trim().isEmpty()) {
-                throw new EmailSendException("Failed to send email due to invalid token");
+                throw new EmailSendException("Failed to send email due to invalid token", HttpStatus.BAD_REQUEST);
             }
 
 
@@ -70,18 +75,125 @@ public class SendGridAdapter {
             );
             log.info("Request body: {}", response);
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new EmailSendException("Failed to send email through RPost");
+                throw new EmailSendException("Failed to send email through RPost", HttpStatus.BAD_REQUEST);
             }
 
             RPostResponse apiResponse = response.getBody();
             return convertToEmailResponseDto(apiResponse);
 
+        } catch (EmailSendException e) {
+            log.error("Error sending email through RPost (EmailSendException): {}", e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             log.error("Error sending email through RPost", e);
-            throw new EmailSendException("Error sending email through RPost " + e.getMessage());
+            throw new EmailSendException("Error sending email through RPost " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
     }
+
+    private String processEmailList(String emails) {
+        if (emails == null || emails.trim().isEmpty()) {
+            return "";
+        }
+        return Arrays.stream(emails.split(";"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(";"));
+    }
+
+    public String uploadFile(MultipartFile file, String token) {
+        try {
+            String uploadUrl = apiDomain + "api/Upload";
+            log.info("Uploading file to URL: {}", uploadUrl);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(token);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            Resource fileResource = createFileResource(file);
+            log.info("File resource created for upload: {}", file.getOriginalFilename());
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", fileResource);
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uploadUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class
+            );
+            log.info("Upload response received with status: {}", response.getStatusCode());
+            log.debug("Response body: {}", response.getBody());
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.warn("Upload failed with status: {}", response.getStatusCode());
+                throw new EmailSendException("Upload failed with status: " + response.getStatusCode(), HttpStatus.BAD_REQUEST);
+            }
+
+            return response.getBody();
+
+        } catch (EmailSendException e) {
+            log.error("Error during file upload (EmailSendException): {}", e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during file upload: {}", e.getMessage(), e);
+            throw new EmailSendException("Unexpected error during file upload", e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private Resource createFileResource(MultipartFile file) throws Exception {
+        return new ByteArrayResource(file.getBytes()) {
+            @Override
+            public String getFilename() {
+                return file.getOriginalFilename();
+            }
+        };
+    }
+
+
+    public Object generateUsageReport(UsageReportRequest request, String token, String adminToken) {
+        log.info("Generating usage report with service");
+
+        if (token == null) {
+            throw new EmailSendException("Not authenticated. Please provide a valid token.", HttpStatus.UNAUTHORIZED);
+        }
+
+        String reportUrl = apiDomain + "api/Reports/UsageReport";
+
+        token = adminToken;
+        log.debug("Using token: {}", token);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<UsageReportRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        try {
+            ResponseEntity<Object> response = restTemplate.exchange(
+                    reportUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    Object.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new EmailSendException("Failed to generate report: " + response.getStatusCode(), HttpStatus.BAD_REQUEST);
+            }
+
+            return response.getBody();
+
+        } catch (EmailSendException e) {
+            log.error("Error calling usage report API", e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error calling usage report API", e);
+            throw new EmailSendException("Failed to generate usage report", e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     private EmailResponseDto convertToEmailResponseDto(RPostResponse rPostResponse) {
         EmailResponseDto responseDto = new EmailResponseDto();
@@ -103,13 +215,5 @@ public class SendGridAdapter {
         return responseDto;
     }
 
-    private String processEmailList(String emails) {
-        if (emails == null || emails.trim().isEmpty()) {
-            return "";
-        }
-        return Arrays.stream(emails.split(";"))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining(";"));
-    }
+
 }
