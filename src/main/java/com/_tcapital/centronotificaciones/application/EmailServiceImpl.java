@@ -19,11 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,6 +59,7 @@ public class EmailServiceImpl implements EmailService {
             application.setName(emailRequest.getNameApplication());
             Application savedApplication = emailPersistenceAdapter.saveApplication(application);
 
+            String trackingID = response.getData().getAttributes().getTrackingID();
 
             if (savedApplication != null && savedApplication.getId() != null) {
                 log.info("Application saved successfully with ID: {}", savedApplication.getId());
@@ -71,10 +71,10 @@ public class EmailServiceImpl implements EmailService {
                         .bcc(emailRequest.getBcc())
                         .subject(emailRequest.getSubject())
                         .body(emailRequest.getBody())
-                        .trackingId(response.getData().getAttributes().getTrackingID())
+                        .trackingId(trackingID)
                         .isLargeMail(emailRequest.getIsLargeMail())
-                        .sentAt(ZonedDateTime.now().toLocalDateTime())
-                        .eventdate(ZonedDateTime.now().toLocalDateTime())
+                        .sentAt(zonedDateTime.toLocalDateTime())
+                        .eventdate(zonedDateTime.toLocalDateTime())
                         .isCertificate(true)
                         .status(null)
                         .application(savedApplication)
@@ -140,6 +140,71 @@ public class EmailServiceImpl implements EmailService {
                         .build())
                 .build();
     }
+
+    @Override
+    public Object updateInfoAddresseeAndFiles(String trackingId, RequestAddresseeDto emailRequest) throws EmailSendException {
+        try {
+
+            Email email = emailPersistenceAdapter.findEmailByTrackingId(trackingId)
+                    .orElseThrow(() -> new EmailSendException("Email not found with tracking ID: " + trackingId, HttpStatus.BAD_REQUEST));
+
+            log.info("Found email with tracking ID: {}", trackingId);
+
+
+            Addressee addressee = new Addressee();
+            addressee.setEmail(email);
+            addressee.setName(emailRequest.getName());
+            addressee.setProcess(emailRequest.getProcess());
+            addressee.setTrackingId(email.getTrackingId());
+
+            List<MultipartFile> filesAux = emailRequest.getFile();
+            List<Files> documentos = new ArrayList<>();
+
+            if (filesAux != null && !filesAux.isEmpty()) {
+                log.info("Processing {} files for tracking ID: {}", filesAux.size(), trackingId);
+                for (MultipartFile aux : filesAux) {
+                    Files file = new Files();
+                    file.setNameFile(aux.getOriginalFilename());
+                    file.setTrackingId(trackingId);
+                    file.setUploadDate(zonedDateTime.toLocalDateTime());
+                    file.setContentType(aux.getContentType());
+                    file.setWitness(Boolean.FALSE);
+                    file.setFileData(aux.getBytes());
+                    file.setFileSize(aux.getSize());
+                    documentos.add(file);
+                    log.info("File {} processed and added to the list.", aux.getOriginalFilename());
+                }
+            } else {
+                log.info("No files provided for tracking ID: {}", trackingId);
+            }
+
+
+            emailPersistenceAdapter.saveAddressee(addressee);
+            log.info("Addressee updated successfully for tracking ID: {}", trackingId);
+
+
+            if (!documentos.isEmpty()) {
+                emailPersistenceAdapter.saveFiles(documentos);
+                log.info("{} files saved successfully for tracking ID: {}", documentos.size(), trackingId);
+            } else {
+                log.info("No files to save for tracking ID: {}", trackingId);
+            }
+
+            return Map.of(
+                    "message", "Update info for addressee was successful",
+                    "addresseeId", addressee.getId(),
+                    "filesCount", documentos.size()
+            );
+
+        } catch (EmailSendException e) {
+            log.error("Error processing email for tracking ID {} (EmailSendException): {}", trackingId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while updating addressee and files for tracking ID {}: {}", trackingId, e);
+            throw new EmailSendException("Unexpected error during update: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     public static Specification<Email> filterByStatusAndCcAndProcess(String status, String cc, String process) {
         return (Root<Email> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {

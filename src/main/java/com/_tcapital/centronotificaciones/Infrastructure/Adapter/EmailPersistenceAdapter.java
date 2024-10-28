@@ -17,6 +17,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class EmailPersistenceAdapter {
@@ -35,6 +36,10 @@ public class EmailPersistenceAdapter {
 
     public void saveEmail(Email email) {
         emailRepository.save(email);
+    }
+
+    public Optional<Email> findEmailByTrackingId(String trackingId) {
+        return emailRepository.findByTrackingId(trackingId);
     }
 
     public Page<Email> findByRecipient(Integer pageNo, Integer pageSize) {
@@ -62,5 +67,13 @@ public class EmailPersistenceAdapter {
     public Application saveApplication(Application application) {
         return applicationRepository.save(application);
     }
+
+    public Addressee saveAddressee(Addressee addressee) {
+        return addresseeRepository.save(addressee);
+    }
+    public Object saveFiles(List<Files> files) {
+        return filesRepository.saveAll(files);
+    }
+
 
 }

@@ -16,10 +16,7 @@ public class Addressee {
 
     private String process;
 
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "email_id")
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "email_id", nullable = false)
     private Email email;
-
-
 }

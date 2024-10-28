@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/procesamiento")
 @Tag(name = "Procesamiento", description = "API para el procesamiento de archivos")
 public class ProcesamientoController {
