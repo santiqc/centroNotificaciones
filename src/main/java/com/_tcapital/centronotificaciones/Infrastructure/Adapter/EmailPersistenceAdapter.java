@@ -15,10 +15,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
+@Transactional
 @Component
 public class EmailPersistenceAdapter {
     private final JpaEmailRepository emailRepository;
@@ -56,7 +58,7 @@ public class EmailPersistenceAdapter {
     }
 
     public List<Files> findFilesByTrackingId(String trackingId) {
-        return filesRepository.findByTrackingId(trackingId);
+        return filesRepository.findFilesByTrackingId(trackingId);
     }
 
     public Page<Email> filterEmailsByStatusCcAndProcess(String status, String cc, String process, Integer pageNo, Integer pageSize) {
@@ -76,4 +78,7 @@ public class EmailPersistenceAdapter {
     }
 
 
+    public Optional<Email> findByIdHistoryOrTrackingId(Long idHistory, String trackingId){
+        return emailRepository.findByIdHistoryOrTrackingId(idHistory, trackingId);
+    }
 }

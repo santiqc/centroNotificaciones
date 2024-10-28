@@ -3,17 +3,21 @@ package com._tcapital.centronotificaciones.presentation;
 import com._tcapital.centronotificaciones.Infrastructure.exception.EmailSendException;
 import com._tcapital.centronotificaciones.application.Dto.*;
 import com._tcapital.centronotificaciones.application.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/email")
 public class EmailController {
+    private static final Logger log = LoggerFactory.getLogger(EmailController.class);
     private final EmailService emailService;
 
     public EmailController(EmailService emailService) {
@@ -55,6 +59,20 @@ public class EmailController {
             @ModelAttribute RequestAddresseeDto emailRequest
     ) throws EmailSendException {
         return ResponseEntity.ok(emailService.updateInfoAddresseeAndFiles(trackingId, emailRequest));
+    }
+
+    @GetMapping("/findFiles")
+    public ResponseEntity<Object> findByIdHistoryOrTrackingId(
+            @RequestParam(required = false) Long idHistory,
+            @RequestParam(required = false) String trackingId) {
+        log.info("Received request to find email by idHistory: {} or trackingId: {}", idHistory, trackingId);
+
+        if (idHistory == null && trackingId == null) {
+            log.warn("Both idHistory and trackingId are null. One of them is required.");
+            return ResponseEntity.badRequest().body(Map.of("error", "Either 'idHistory' or 'trackingId' must be provided."));
+        }
+        Object result = emailService.findByIdHistoryOrTrackingId(idHistory, trackingId);
+        return ResponseEntity.ok(result);
     }
 
 }

@@ -14,4 +14,6 @@ public interface EmailService {
     FileUploadResponse uploadFile(MultipartFile file) throws EmailSendException;
 
     Object  updateInfoAddresseeAndFiles(String trackingId, RequestAddresseeDto emailRequest) throws EmailSendException;
+
+    Object findByIdHistoryOrTrackingId(Long idHistory, String trackingId) throws EmailSendException;
 }

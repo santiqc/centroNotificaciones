@@ -205,6 +205,50 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    public Object findByIdHistoryOrTrackingId(Long idHistory, String trackingId) throws EmailSendException {
+        try {
+            Email email = emailPersistenceAdapter.findByIdHistoryOrTrackingId(idHistory, trackingId)
+                    .orElseThrow(() -> new EmailSendException("Email not found with tracking ID: " + trackingId, HttpStatus.BAD_REQUEST));
+
+            List<Files> files = emailPersistenceAdapter.findFilesByTrackingId(email.getTrackingId());
+
+
+            List<Map<String, Object>> fileDetailsList = files.stream()
+                    .map(file -> {
+                        Map<String, Object> fileMap = new HashMap<>();
+                        fileMap.put("base64", Base64.getEncoder().encodeToString(file.getFileData()));
+                        fileMap.put("nameFile", file.getNameFile());
+                        fileMap.put("contentType", file.getContentType());
+                        fileMap.put("fileSize", file.getFileSize());
+                        fileMap.put("uploadDate", file.getUploadDate());
+                        fileMap.put("witness", file.getWitness());
+                        return fileMap;
+                    })
+                    .collect(Collectors.toList());
+
+            long attachmentCount = files.stream()
+                    .filter(file -> Boolean.FALSE.equals(file.getWitness()))
+                    .count();
+
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Email and file retrieval successful");
+            response.put("trackingId", email.getTrackingId());
+            response.put("attachmentCount", attachmentCount);
+            response.put("idHistory", email.getIdHistory());
+            response.put("files", fileDetailsList);
+
+            return response;
+        } catch (EmailSendException e) {
+            log.error("Error processing email for tracking ID {} (EmailSendException): {}", trackingId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error while retrieving email and files for tracking ID {}: {}", trackingId, e);
+            throw new EmailSendException("Unexpected error during retrieval: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     public static Specification<Email> filterByStatusAndCcAndProcess(String status, String cc, String process) {
         return (Root<Email> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {
