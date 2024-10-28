@@ -30,7 +30,7 @@ public class EmailController {
     }
 
     @PostMapping(value = "/sendEmailData", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<EmailResponseDto> sendEmail( @ModelAttribute RequestEmailCompletDto emailRequest) throws EmailSendException {
+    public ResponseEntity<EmailResponseDto> sendEmail(@ModelAttribute RequestEmailCompletDto emailRequest) throws EmailSendException {
         return ResponseEntity.ok(emailService.sendEmail(emailRequest));
     }
 
@@ -78,6 +78,13 @@ public class EmailController {
         }
         Object result = emailService.findByIdHistoryOrTrackingId(idHistory, trackingId);
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping(value = "/usagereport", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> generateUsageReport(
+            @RequestBody UsageReportRequest request) {
+        Object response = emailService.generateUsageReport(request);
+        return ResponseEntity.ok(response);
     }
 
 }

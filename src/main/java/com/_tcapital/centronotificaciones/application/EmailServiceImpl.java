@@ -9,7 +9,6 @@ import com._tcapital.centronotificaciones.domain.Addressee;
 import com._tcapital.centronotificaciones.domain.Application;
 import com._tcapital.centronotificaciones.domain.Email;
 import com._tcapital.centronotificaciones.domain.Files;
-import jakarta.persistence.criteria.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -317,5 +316,19 @@ public class EmailServiceImpl implements EmailService {
             log.error("An error occurred during email sending process for application: {}", emailRequest.getNameApplication(), e);
             throw new EmailSendException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    public Object generateUsageReport(UsageReportRequest request) throws EmailSendException {
+        log.info("Initiating generateUsageReport: {}", request);
+        LoginCamerResponse login = loginService.login();
+        String token = login.getData().getAttributes().getAccessToken();
+        String tokenAdmin = login.getDataAdmin().getAccessToken();
+
+        Object response = sendGridAdapter.generateUsageReport(request, token, tokenAdmin);
+
+        return Map.of(
+                "data", response
+        );
     }
 }

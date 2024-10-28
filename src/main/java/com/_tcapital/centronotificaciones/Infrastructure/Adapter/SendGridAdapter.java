@@ -153,6 +153,48 @@ public class SendGridAdapter {
     }
 
 
+    public Object generateUsageReport(UsageReportRequest request, String token, String adminToken) {
+        log.info("Generating usage report with service");
+
+        if (token == null) {
+            throw new EmailSendException("Not authenticated. Please provide a valid token.", HttpStatus.UNAUTHORIZED);
+        }
+
+        String reportUrl = apiDomain + "api/Reports/UsageReport";
+
+        token = adminToken;
+        log.debug("Using token: {}", token);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<UsageReportRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        try {
+            ResponseEntity<Object> response = restTemplate.exchange(
+                    reportUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    Object.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new EmailSendException("Failed to generate report: " + response.getStatusCode(), HttpStatus.BAD_REQUEST);
+            }
+
+            return response.getBody();
+
+        } catch (EmailSendException e) {
+            log.error("Error calling usage report API", e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error calling usage report API", e);
+            throw new EmailSendException("Failed to generate usage report", e, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
     private EmailResponseDto convertToEmailResponseDto(RPostResponse rPostResponse) {
         EmailResponseDto responseDto = new EmailResponseDto();
         DataBodyDto dataDto = new DataBodyDto();
